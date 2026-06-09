@@ -11,6 +11,7 @@ enum Role {
   ADMIN
   DOSEN
   MAHASISWA
+  UMUM
 }
 
 enum MaterialType {
@@ -18,6 +19,25 @@ enum MaterialType {
   PDF
   DOCUMENT
   LINK
+}
+
+enum CourseVisibility {
+  DRAFT
+  INTERNAL
+  PUBLIC
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  EXPIRED
 }
 
 model User {
@@ -30,25 +50,34 @@ model User {
   nip       String?
   createdAt DateTime @default(now())
 
-  courses          Course[]
-  enrollments      Enrollment[]
-  materialProgress MaterialProgress[]
+  courses           Course[]           @relation("InstructorCourses")
+  enrollments       Enrollment[]
+  materialProgress  MaterialProgress[]
+  approvalRequests  CourseApproval[]   @relation("ApprovalRequester")
+  approvalReviews   CourseApproval[]   @relation("ApprovalReviewer")
+  payments          Payment[]
+  confirmedPayments Payment[]          @relation("PaymentConfirmer")
 
   @@map("users")
 }
 
 model Course {
-  id           String   @id @default(cuid())
+  id           String           @id @default(cuid())
   title        String
   description  String
   instructorId String
   semester     String
-  isPublished  Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  visibility   CourseVisibility @default(DRAFT)
+  price        Int              @default(0)
+  isApproved   Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
-  instructor  User         @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  instructor  User             @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: Cascade)
   modules     Module[]
   enrollments Enrollment[]
+  approvals   CourseApproval[]
+  payments    Payment[]
 
   @@map("courses")
 }
@@ -103,4 +132,56 @@ model MaterialProgress {
 
   @@unique([userId, materialId])
   @@map("material_progress")
+}
+
+model CourseApproval {
+  id               String           @id @default(cuid())
+  courseId         String
+  requestedBy      String
+  targetVisibility CourseVisibility
+  suggestedPrice   Int?
+  requesterNotes   String?
+  status           ApprovalStatus   @default(PENDING)
+  adminNotes       String?
+  finalPrice       Int?
+  reviewedBy       String?
+  createdAt        DateTime         @default(now())
+  reviewedAt       DateTime?
+
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  requester User    @relation("ApprovalRequester", fields: [requestedBy], references: [id])
+  reviewer  User?   @relation("ApprovalReviewer", fields: [reviewedBy], references: [id])
+
+  @@map("course_approvals")
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  userId      String
+  courseId    String
+  amount      Int
+  vaNumber    String        @unique
+  bankName    String        @default("BCA Virtual Account")
+  status      PaymentStatus @default(PENDING)
+  confirmedBy String?
+  confirmedAt DateTime?
+  expiredAt   DateTime
+  createdAt   DateTime      @default(now())
+
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  confirmer User?   @relation("PaymentConfirmer", fields: [confirmedBy], references: [id])
+
+  @@unique([userId, courseId])
+  @@map("payments")
+}
+
+model PlatformSettings {
+  id            String   @id @default("global")
+  bankName      String   @default("BCA Virtual Account")
+  vaPrefix      String   @default("8808")
+  vaExpiryHours Int      @default(24)
+  updatedAt     DateTime @updatedAt
+
+  @@map("platform_settings")
 }

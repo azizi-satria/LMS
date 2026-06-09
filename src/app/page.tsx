@@ -4,7 +4,7 @@ import PublicNavbar from "@/components/PublicNavbar";
 
 async function getStats() {
   const [totalCourses, totalStudents, totalInstructors] = await Promise.all([
-    prisma.course.count({ where: { isPublished: true } }),
+    prisma.course.count({ where: { visibility: "PUBLIC", isApproved: true } }),
     prisma.user.count({ where: { role: "MAHASISWA" } }),
     prisma.user.count({ where: { role: "DOSEN" } }),
   ]);
@@ -13,7 +13,7 @@ async function getStats() {
 
 async function getFeaturedCourses() {
   return prisma.course.findMany({
-    where: { isPublished: true },
+    where: { visibility: "PUBLIC", isApproved: true },
     include: {
       instructor: { select: { name: true } },
       _count: { select: { enrollments: true, modules: true } },

@@ -16,7 +16,7 @@ export default async function PublicCourseDetailPage({ params }: { params: Promi
   const session = await auth();
 
   const course = await prisma.course.findUnique({
-    where: { id, isPublished: true },
+    where: { id, visibility: "PUBLIC", isApproved: true },
     include: {
       instructor: { select: { name: true, nip: true } },
       modules: {

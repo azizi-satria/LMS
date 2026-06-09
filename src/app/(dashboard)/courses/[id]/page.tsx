@@ -6,11 +6,22 @@ import { useSession } from "next-auth/react";
 import MaterialList from "@/components/MaterialList";
 import Link from "next/link";
 
+interface Payment {
+  id: string;
+  vaNumber: string;
+  bankName: string;
+  amount: number;
+  status: string;
+  expiredAt: string;
+}
+
 interface Course {
   id: string;
   title: string;
   description: string;
   semester: string;
+  visibility: string;
+  price: number;
   instructor: { name: string };
   modules: {
     id: string;
@@ -40,6 +51,7 @@ export default function CourseDetailPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const [payment, setPayment] = useState<Payment | null>(null);
   const [loading, setLoading] = useState(true);
   const [enrollLoading, setEnrollLoading] = useState(false);
 
@@ -47,14 +59,12 @@ export default function CourseDetailPage() {
     async function fetchData() {
       try {
         const res = await fetch(`/api/courses/${params.id}`);
-        if (!res.ok) {
-          router.push("/courses");
-          return;
-        }
+        if (!res.ok) { router.push("/courses"); return; }
         const data = await res.json();
         setCourse(data.course);
         setIsEnrolled(data.isEnrolled);
         setCompletedIds(data.completedMaterialIds || []);
+        setPayment(data.payment || null);
       } finally {
         setLoading(false);
       }
@@ -65,11 +75,14 @@ export default function CourseDetailPage() {
   async function handleEnroll() {
     setEnrollLoading(true);
     try {
-      const res = await fetch(`/api/courses/${params.id}/enroll`, {
-        method: "POST",
-      });
+      const res = await fetch(`/api/courses/${params.id}/enroll`, { method: "POST" });
+      const data = await res.json();
       if (res.ok) {
-        setIsEnrolled(true);
+        if (data.enrolled) {
+          setIsEnrolled(true);
+        } else if (data.payment) {
+          setPayment(data.payment);
+        }
       }
     } finally {
       setEnrollLoading(false);
@@ -82,18 +95,13 @@ export default function CourseDetailPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ materialId }),
     });
-    if (res.ok) {
-      setCompletedIds((prev) => [...prev, materialId]);
-    }
+    if (res.ok) setCompletedIds((prev) => [...prev, materialId]);
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div
-          className="animate-spin rounded-full h-10 w-10 border-b-2"
-          style={{ borderColor: "#7c3aed" }}
-        />
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: "#7c3aed" }} />
       </div>
     );
   }
@@ -102,14 +110,12 @@ export default function CourseDetailPage() {
 
   const totalMaterials = course.modules.reduce((s, m) => s + m.materials.length, 0);
   const progress = totalMaterials > 0 ? Math.round((completedIds.length / totalMaterials) * 100) : 0;
+  const isFree = course.price === 0;
+  const canEnroll = session?.user?.role === "MAHASISWA" || session?.user?.role === "UMUM";
 
   return (
     <div className="max-w-4xl">
-      <Link
-        href="/courses"
-        className="flex items-center gap-1 text-sm mb-6 transition-colors"
-        style={{ color: "#64748b" }}
-      >
+      <Link href="/courses" className="flex items-center gap-1 text-sm mb-6 transition-colors" style={{ color: "#64748b" }}>
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
@@ -119,26 +125,17 @@ export default function CourseDetailPage() {
       <div style={cardStyle} className="p-8 mb-5">
         <div className="flex items-start justify-between gap-6">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-4">
-              <span
-                className="px-3 py-1 rounded-lg text-xs font-semibold"
-                style={{
-                  background: "linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.1))",
-                  color: "#a855f7",
-                  border: "1px solid rgba(124,58,237,0.2)",
-                }}
-              >
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <span className="px-3 py-1 rounded-lg text-xs font-semibold" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.1))", color: "#a855f7", border: "1px solid rgba(124,58,237,0.2)" }}>
                 {course.semester}
               </span>
+              {course.visibility === "PUBLIC" && (
+                <span className="px-2.5 py-1 rounded-lg text-xs font-semibold" style={isFree ? { background: "rgba(34,197,94,0.15)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)" } : { background: "rgba(168,85,247,0.15)", color: "#c084fc", border: "1px solid rgba(168,85,247,0.3)" }}>
+                  {isFree ? "Gratis" : `Rp ${course.price.toLocaleString("id-ID")}`}
+                </span>
+              )}
             </div>
-            <h1
-              className="text-2xl font-bold mb-3"
-              style={{
-                background: "linear-gradient(135deg, #f1f5f9, #a855f7)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
+            <h1 className="text-2xl font-bold mb-3" style={{ background: "linear-gradient(135deg, #f1f5f9, #a855f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               {course.title}
             </h1>
             <p className="mb-5" style={{ color: "#94a3b8" }}>{course.description}</p>
@@ -149,31 +146,19 @@ export default function CourseDetailPage() {
                 </svg>
                 {course.instructor.name}
               </span>
-              <span>{course._count.enrollments} mahasiswa</span>
+              <span>{course._count.enrollments} peserta</span>
               <span>{course.modules.length} modul</span>
             </div>
           </div>
 
-          {session?.user?.role === "MAHASISWA" && (
+          {canEnroll && (
             <div className="flex-shrink-0">
               {isEnrolled ? (
                 <div className="text-center">
                   <div className="relative w-24 h-24 mx-auto">
                     <svg className="w-24 h-24 -rotate-90" viewBox="0 0 36 36">
-                      <path
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="rgba(255,255,255,0.08)"
-                        strokeWidth="3"
-                      />
-                      <path
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="url(#circleGrad)"
-                        strokeWidth="3"
-                        strokeDasharray={`${progress}, 100`}
-                        strokeLinecap="round"
-                      />
+                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="url(#circleGrad)" strokeWidth="3" strokeDasharray={`${progress}, 100`} strokeLinecap="round" />
                       <defs>
                         <linearGradient id="circleGrad" x1="0" y1="0" x2="1" y2="0">
                           <stop offset="0%" stopColor="#a855f7" />
@@ -182,68 +167,71 @@ export default function CourseDetailPage() {
                       </defs>
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span
-                        className="text-lg font-bold"
-                        style={{ color: "#a855f7" }}
-                      >
-                        {progress}%
-                      </span>
+                      <span className="text-lg font-bold" style={{ color: "#a855f7" }}>{progress}%</span>
                     </div>
                   </div>
                   <p className="text-xs mt-2" style={{ color: "#64748b" }}>Progress Anda</p>
                 </div>
-              ) : (
-                <button
-                  onClick={handleEnroll}
-                  disabled={enrollLoading}
-                  className="gradient-btn px-6 py-3 rounded-xl font-semibold disabled:opacity-50"
-                >
-                  {enrollLoading ? "Mendaftar..." : "Daftar Kursus"}
+              ) : !payment ? (
+                <button onClick={handleEnroll} disabled={enrollLoading} className="gradient-btn px-6 py-3 rounded-xl font-semibold disabled:opacity-50">
+                  {enrollLoading ? "Memproses..." : isFree ? "Daftar Gratis" : "Bayar & Daftar"}
                 </button>
-              )}
+              ) : null}
             </div>
           )}
         </div>
       </div>
 
+      {/* VA Payment Info */}
+      {payment && !isEnrolled && (
+        <div className="rounded-2xl p-6 mb-5" style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.3)" }}>
+          <h3 className="font-bold mb-3" style={{ color: "#c084fc" }}>Menunggu Pembayaran</h3>
+          <p className="text-sm mb-4" style={{ color: "#94a3b8" }}>
+            Transfer ke Virtual Account berikut dan tunggu konfirmasi dari admin.
+          </p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span style={{ color: "#64748b" }}>Bank</span>
+              <span style={{ color: "#f1f5f9", fontWeight: 600 }}>{payment.bankName}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span style={{ color: "#64748b" }}>Nomor VA</span>
+              <code style={{ color: "#c084fc", fontSize: "1.1rem", fontWeight: 700, letterSpacing: "0.05em" }}>{payment.vaNumber}</code>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: "#64748b" }}>Jumlah</span>
+              <span style={{ color: "#22c55e", fontWeight: 700 }}>Rp {payment.amount.toLocaleString("id-ID")}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: "#64748b" }}>Kadaluarsa</span>
+              <span style={{ color: new Date(payment.expiredAt) < new Date() ? "#ef4444" : "#f1f5f9" }}>
+                {new Date(payment.expiredAt).toLocaleString("id-ID")}
+              </span>
+            </div>
+          </div>
+          <p className="text-xs mt-4" style={{ color: "#64748b" }}>
+            Akses kursus akan aktif otomatis setelah admin mengkonfirmasi pembayaran Anda.
+          </p>
+        </div>
+      )}
+
       {isEnrolled && totalMaterials > 0 && (
-        <div
-          className="rounded-2xl p-5 mb-5"
-          style={{
-            background: "rgba(124,58,237,0.08)",
-            border: "1px solid rgba(124,58,237,0.2)",
-          }}
-        >
+        <div className="rounded-2xl p-5 mb-5" style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)" }}>
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium" style={{ color: "#f1f5f9" }}>Progress Belajar</span>
-            <span className="text-sm" style={{ color: "#a855f7" }}>
-              {completedIds.length}/{totalMaterials} materi selesai
-            </span>
+            <span className="text-sm" style={{ color: "#a855f7" }}>{completedIds.length}/{totalMaterials} materi selesai</span>
           </div>
-          <div
-            className="rounded-full h-2"
-            style={{ background: "rgba(255,255,255,0.08)" }}
-          >
-            <div
-              className="h-full rounded-full progress-glow"
-              style={{ width: `${progress}%` }}
-            />
+          <div className="rounded-full h-2" style={{ background: "rgba(255,255,255,0.08)" }}>
+            <div className="h-full rounded-full progress-glow" style={{ width: `${progress}%` }} />
           </div>
         </div>
       )}
 
       <div style={cardStyle} className="p-6">
         <h2 className="text-lg font-semibold mb-5" style={{ color: "#f1f5f9" }}>Konten Kursus</h2>
-        {!isEnrolled && session?.user?.role === "MAHASISWA" && (
-          <div
-            className="rounded-xl p-4 mb-5 text-sm"
-            style={{
-              background: "rgba(245,158,11,0.08)",
-              border: "1px solid rgba(245,158,11,0.2)",
-              color: "#fbbf24",
-            }}
-          >
-            Daftar ke kursus ini untuk mengakses semua materi dan melacak progress Anda.
+        {!isEnrolled && canEnroll && !payment && (
+          <div className="rounded-xl p-4 mb-5 text-sm" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", color: "#fbbf24" }}>
+            {isFree ? "Daftar ke kursus ini untuk mengakses semua materi." : "Selesaikan pembayaran untuk mengakses semua materi."}
           </div>
         )}
         <MaterialList

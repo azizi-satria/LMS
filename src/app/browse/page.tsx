@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default async function BrowsePage() {
   const courses = await prisma.course.findMany({
-    where: { isPublished: true },
+    where: { visibility: "PUBLIC", isApproved: true },
     include: {
       instructor: { select: { name: true } },
       _count: { select: { enrollments: true, modules: true } },
