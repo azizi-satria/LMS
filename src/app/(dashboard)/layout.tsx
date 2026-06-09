@@ -1,15 +1,36 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import { prisma } from "@/lib/prisma";
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  let mahasiswaHasNoCourses = false;
+  if (session.user.role === "MAHASISWA") {
+    const count = await prisma.enrollment.count({ where: { userId: session.user.id } });
+    mahasiswaHasNoCourses = count === 0;
+  }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen" style={{ background: "#0a0a0f" }}>
       <div className="w-64 flex-shrink-0 h-full">
-        <Sidebar user={{ name: session.user.name || "", email: session.user.email || "", role: session.user.role }} />
+        <Sidebar
+          user={{
+            name: session.user.name || "",
+            email: session.user.email || "",
+            role: session.user.role,
+          }}
+          mahasiswaHasNoCourses={mahasiswaHasNoCourses}
+        />
       </div>
       <div className="flex-1 overflow-y-auto">
         <main className="p-8">{children}</main>
