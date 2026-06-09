@@ -21,7 +21,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen" style={{ background: "#0a0a0f" }}>
+    <div className="flex h-screen" style={{ background: "var(--bg-base)" }}>
       <div className="w-64 flex-shrink-0 h-full">
         <Sidebar
           user={{
@@ -32,7 +32,7 @@ export default async function DashboardLayout({
           mahasiswaHasNoCourses={mahasiswaHasNoCourses}
         />
       </div>
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" style={{ background: "var(--bg-base)" }}>
         <main className="p-8">{children}</main>
       </div>
     </div>
