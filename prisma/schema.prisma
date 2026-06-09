@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOSEN
+  MAHASISWA
+}
+
+enum MaterialType {
+  VIDEO
+  PDF
+  DOCUMENT
+  LINK
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(MAHASISWA)
+  nim       String?
+  nip       String?
+  createdAt DateTime @default(now())
+
+  courses          Course[]
+  enrollments      Enrollment[]
+  materialProgress MaterialProgress[]
+
+  @@map("users")
+}
+
+model Course {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  instructorId String
+  semester     String
+  isPublished  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  instructor  User         @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  modules     Module[]
+  enrollments Enrollment[]
+
+  @@map("courses")
+}
+
+model Module {
+  id       String @id @default(cuid())
+  courseId String
+  title    String
+  order    Int    @default(0)
+
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  materials Material[]
+
+  @@map("modules")
+}
+
+model Material {
+  id         String       @id @default(cuid())
+  moduleId   String
+  title      String
+  type       MaterialType
+  contentUrl String
+  order      Int          @default(0)
+
+  module   Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress MaterialProgress[]
+
+  @@map("materials")
+}
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  userId     String
+  courseId   String
+  enrolledAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model MaterialProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  materialId  String
+  completedAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, materialId])
+  @@map("material_progress")
+}
