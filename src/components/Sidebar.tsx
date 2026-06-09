@@ -86,6 +86,14 @@ function CogIcon() {
   );
 }
 
+function AwardIcon() {
+  return (
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+    </svg>
+  );
+}
+
 const navItemsByRole: Record<Role, NavItem[]> = {
   ADMIN: [
     { href: "/dashboard", label: "Dashboard", icon: <HomeIcon /> },
@@ -106,11 +114,13 @@ const navItemsByRole: Record<Role, NavItem[]> = {
     { href: "/dashboard", label: "Dashboard", icon: <HomeIcon /> },
     { href: "/courses", label: "Jelajahi Kursus", icon: <BookIcon /> },
     { href: "/browse", label: "Kursus Publik", icon: <GlobeIcon /> },
+    { href: "/profile/certificates", label: "Sertifikat Saya", icon: <AwardIcon /> },
     { href: "/profile", label: "Profil Saya", icon: <UserIcon /> },
   ],
   UMUM: [
     { href: "/dashboard", label: "Dashboard", icon: <HomeIcon /> },
     { href: "/courses", label: "Kursus Publik", icon: <BookIcon /> },
+    { href: "/profile/certificates", label: "Sertifikat Saya", icon: <AwardIcon /> },
     { href: "/profile", label: "Profil Saya", icon: <UserIcon /> },
   ],
 };

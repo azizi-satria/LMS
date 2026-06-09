@@ -40,6 +40,17 @@ enum PaymentStatus {
   EXPIRED
 }
 
+enum QuizType {
+  PRE_TEST
+  POST_TEST
+  MODULE_QUIZ
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  GRADED
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -50,13 +61,18 @@ model User {
   nip       String?
   createdAt DateTime @default(now())
 
-  courses           Course[]           @relation("InstructorCourses")
-  enrollments       Enrollment[]
-  materialProgress  MaterialProgress[]
-  approvalRequests  CourseApproval[]   @relation("ApprovalRequester")
-  approvalReviews   CourseApproval[]   @relation("ApprovalReviewer")
-  payments          Payment[]
-  confirmedPayments Payment[]          @relation("PaymentConfirmer")
+  courses             Course[]           @relation("InstructorCourses")
+  enrollments         Enrollment[]
+  materialProgress    MaterialProgress[]
+  approvalRequests    CourseApproval[]   @relation("ApprovalRequester")
+  approvalReviews     CourseApproval[]   @relation("ApprovalReviewer")
+  payments            Payment[]
+  confirmedPayments   Payment[]          @relation("PaymentConfirmer")
+  quizAttempts        QuizAttempt[]
+  assignments         AssignmentSubmission[]
+  forumThreads        ForumThread[]
+  forumReplies        ForumReply[]
+  certificates        Certificate[]
 
   @@map("users")
 }
@@ -65,6 +81,8 @@ model Course {
   id           String           @id @default(cuid())
   title        String
   description  String
+  objectives   String?
+  requirements String?
   instructorId String
   semester     String
   visibility   CourseVisibility @default(DRAFT)
@@ -73,11 +91,15 @@ model Course {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
-  instructor  User             @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: Cascade)
-  modules     Module[]
-  enrollments Enrollment[]
-  approvals   CourseApproval[]
-  payments    Payment[]
+  instructor    User             @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: Cascade)
+  modules       Module[]
+  enrollments   Enrollment[]
+  approvals     CourseApproval[]
+  payments      Payment[]
+  quizzes       Quiz[]
+  liveSessions  LiveSession[]
+  forumThreads  ForumThread[]
+  certificates  Certificate[]
 
   @@map("courses")
 }
@@ -88,8 +110,10 @@ model Module {
   title    String
   order    Int    @default(0)
 
-  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  materials Material[]
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  materials   Material[]
+  quizzes     Quiz[]
+  assignments Assignment[]
 
   @@map("modules")
 }
@@ -133,6 +157,194 @@ model MaterialProgress {
   @@unique([userId, materialId])
   @@map("material_progress")
 }
+
+// ─── QUIZ SYSTEM ─────────────────────────────────────────────────────────────
+
+model Quiz {
+  id           String   @id @default(cuid())
+  courseId     String
+  moduleId     String?
+  type         QuizType
+  title        String
+  description  String?
+  passingScore Int      @default(70)
+  timeLimit    Int?
+  randomize    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module    Module?       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model Question {
+  id         String @id @default(cuid())
+  quizId     String
+  text       String
+  imageUrl   String?
+  points     Int    @default(1)
+  order      Int    @default(0)
+  explanation String?
+
+  quiz    Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options QuestionOption[]
+  answers QuizAnswer[]
+
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String  @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean @default(false)
+  order      Int     @default(0)
+
+  question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  QuizAnswer[]
+
+  @@map("question_options")
+}
+
+model QuizAttempt {
+  id          String    @id @default(cuid())
+  quizId      String
+  userId      String
+  score       Int
+  totalPoints Int
+  isPassed    Boolean
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@map("quiz_attempts")
+}
+
+model QuizAnswer {
+  id         String  @id @default(cuid())
+  attemptId  String
+  questionId String
+  optionId   String
+  isCorrect  Boolean
+
+  attempt  QuizAttempt    @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  option   QuestionOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_answers")
+}
+
+// ─── LIVE SESSION ─────────────────────────────────────────────────────────────
+
+model LiveSession {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  description String?
+  zoomLink    String
+  startAt     DateTime
+  endAt       DateTime
+  createdAt   DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("live_sessions")
+}
+
+// ─── ASSIGNMENT ───────────────────────────────────────────────────────────────
+
+model Assignment {
+  id          String   @id @default(cuid())
+  moduleId    String
+  title       String
+  description String
+  deadline    DateTime?
+  maxScore    Int      @default(100)
+  createdAt   DateTime @default(now())
+
+  module      Module                 @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
+
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id           String           @id @default(cuid())
+  assignmentId String
+  userId       String
+  content      String
+  fileUrl      String?
+  score        Int?
+  feedback     String?
+  status       SubmissionStatus @default(SUBMITTED)
+  submittedAt  DateTime         @default(now())
+  gradedAt     DateTime?
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, userId])
+  @@map("assignment_submissions")
+}
+
+// ─── FORUM ────────────────────────────────────────────────────────────────────
+
+model ForumThread {
+  id        String   @id @default(cuid())
+  courseId  String
+  userId    String
+  title     String
+  content   String
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course  Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  replies ForumReply[]
+
+  @@map("forum_threads")
+}
+
+model ForumReply {
+  id        String   @id @default(cuid())
+  threadId  String
+  userId    String
+  content   String
+  parentId  String?
+  createdAt DateTime @default(now())
+
+  thread  ForumThread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  ForumReply?  @relation("ReplyToReply", fields: [parentId], references: [id])
+  replies ForumReply[] @relation("ReplyToReply")
+
+  @@map("forum_replies")
+}
+
+// ─── CERTIFICATE ──────────────────────────────────────────────────────────────
+
+model Certificate {
+  id          String   @id @default(cuid())
+  userId      String
+  courseId    String
+  code        String   @unique
+  issuedAt    DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("certificates")
+}
+
+// ─── PAYMENT & SETTINGS ───────────────────────────────────────────────────────
 
 model CourseApproval {
   id               String           @id @default(cuid())
