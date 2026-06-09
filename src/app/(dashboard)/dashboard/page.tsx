@@ -181,7 +181,7 @@ export default async function DashboardPage() {
     });
 
     const totalStudents = courses.reduce((sum, c) => sum + c._count.enrollments, 0);
-    const publishedCount = courses.filter((c) => c.isPublished).length;
+    const publishedCount = courses.filter((c) => c.visibility !== "DRAFT").length;
 
     const chartData = courses.slice(0, 6).map((c) => ({
       name: c.title.length > 16 ? c.title.slice(0, 16) + "…" : c.title,
@@ -267,12 +267,14 @@ export default async function DashboardPage() {
                       <span
                         className="px-2 py-0.5 rounded-full text-xs font-medium"
                         style={
-                          course.isPublished
-                            ? { background: "rgba(16,185,129,0.12)", color: "#34d399", border: "1px solid rgba(16,185,129,0.25)" }
-                            : { background: "rgba(245,158,11,0.12)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.25)" }
+                          course.visibility === "PUBLIC"
+                            ? { background: "rgba(34,197,94,0.12)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.25)" }
+                            : course.visibility === "INTERNAL"
+                            ? { background: "rgba(245,158,11,0.12)", color: "#fbbf24", border: "1px solid rgba(245,158,11,0.25)" }
+                            : { background: "rgba(100,116,139,0.12)", color: "#94a3b8", border: "1px solid rgba(100,116,139,0.25)" }
                         }
                       >
-                        {course.isPublished ? "Aktif" : "Draft"}
+                        {course.visibility === "PUBLIC" ? "Publik" : course.visibility === "INTERNAL" ? "Internal" : "Draft"}
                       </span>
                       <Link
                         href={`/instructor/courses/${course.id}/edit`}

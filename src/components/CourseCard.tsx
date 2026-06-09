@@ -1,81 +1,76 @@
 import Link from "next/link";
 
+type CourseVisibility = "DRAFT" | "INTERNAL" | "PUBLIC";
+
 interface CourseCardProps {
   course: {
     id: string;
     title: string;
     description: string;
     semester: string;
-    isPublished: boolean;
-    instructor?: {
-      name: string;
-    };
-    _count?: {
-      enrollments: number;
-      modules: number;
-    };
+    visibility?: CourseVisibility;
+    price?: number;
+    isApproved?: boolean;
+    instructor?: { name: string };
+    _count?: { enrollments: number; modules: number };
   };
   href: string;
   showStatus?: boolean;
   progress?: number;
 }
 
+const visibilityStyles: Record<CourseVisibility, { bg: string; color: string; border: string; label: string }> = {
+  DRAFT: { bg: "rgba(100,116,139,0.15)", color: "#94a3b8", border: "rgba(100,116,139,0.3)", label: "Draft" },
+  INTERNAL: { bg: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "rgba(245,158,11,0.3)", label: "Internal" },
+  PUBLIC: { bg: "rgba(34,197,94,0.15)", color: "#22c55e", border: "rgba(34,197,94,0.3)", label: "Publik" },
+};
+
 export default function CourseCard({ course, href, showStatus = false, progress }: CourseCardProps) {
+  const vis = course.visibility ? visibilityStyles[course.visibility] : null;
+  const isFree = !course.price || course.price === 0;
+
   return (
     <Link href={href} className="block h-full">
-      <div
-        className="glass-card-hover p-6 h-full flex flex-col"
-        style={{ cursor: "pointer" }}
-      >
+      <div className="glass-card-hover p-6 h-full flex flex-col" style={{ cursor: "pointer" }}>
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-semibold truncate" style={{ color: "#f1f5f9" }}>
               {course.title}
             </h3>
             {course.instructor && (
-              <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>
-                {course.instructor.name}
-              </p>
+              <p className="text-sm mt-0.5" style={{ color: "#64748b" }}>{course.instructor.name}</p>
             )}
           </div>
-          {showStatus && (
+          {showStatus && vis && (
             <span
               className="ml-2 flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium"
-              style={
-                course.isPublished
-                  ? {
-                      background: "rgba(16,185,129,0.15)",
-                      color: "#10b981",
-                      border: "1px solid rgba(16,185,129,0.3)",
-                    }
-                  : {
-                      background: "rgba(245,158,11,0.15)",
-                      color: "#f59e0b",
-                      border: "1px solid rgba(245,158,11,0.3)",
-                    }
-              }
+              style={{ background: vis.bg, color: vis.color, border: `1px solid ${vis.border}` }}
             >
-              {course.isPublished ? "Dipublikasikan" : "Draft"}
+              {vis.label}
             </span>
           )}
         </div>
 
-        <p className="text-sm line-clamp-2 mb-4 flex-1" style={{ color: "#94a3b8" }}>
-          {course.description}
-        </p>
+        <p className="text-sm line-clamp-2 mb-4 flex-1" style={{ color: "#94a3b8" }}>{course.description}</p>
 
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs">
-            <span
-              className="px-2.5 py-1 rounded-lg font-medium"
-              style={{
-                background: "linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.1))",
-                color: "#a855f7",
-                border: "1px solid rgba(124,58,237,0.2)",
-              }}
-            >
-              {course.semester}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className="px-2.5 py-1 rounded-lg font-medium"
+                style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.1))", color: "#a855f7", border: "1px solid rgba(124,58,237,0.2)" }}
+              >
+                {course.semester}
+              </span>
+              {course.visibility === "PUBLIC" && (
+                <span
+                  className="px-2 py-0.5 rounded-lg font-semibold"
+                  style={isFree ? { background: "rgba(34,197,94,0.15)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)" } : { background: "rgba(168,85,247,0.15)", color: "#c084fc", border: "1px solid rgba(168,85,247,0.3)" }}
+                >
+                  {isFree ? "Gratis" : `Rp ${(course.price ?? 0).toLocaleString("id-ID")}`}
+                </span>
+              )}
+            </div>
             {course._count && (
               <div className="flex items-center gap-3" style={{ color: "#64748b" }}>
                 <span className="flex items-center gap-1">
@@ -100,14 +95,8 @@ export default function CourseCard({ course, href, showStatus = false, progress 
                 <span style={{ color: "#64748b" }}>Progress</span>
                 <span style={{ color: "#a855f7" }}>{progress}%</span>
               </div>
-              <div
-                className="h-1.5 rounded-full overflow-hidden"
-                style={{ background: "rgba(255,255,255,0.08)" }}
-              >
-                <div
-                  className="h-full rounded-full progress-glow transition-all"
-                  style={{ width: `${progress}%` }}
-                />
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+                <div className="h-full rounded-full progress-glow transition-all" style={{ width: `${progress}%` }} />
               </div>
             </div>
           )}

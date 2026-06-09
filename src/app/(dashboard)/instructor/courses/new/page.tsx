@@ -22,7 +22,6 @@ export default function NewCoursePage() {
     title: "",
     description: "",
     semester: "",
-    isPublished: false,
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -156,39 +155,8 @@ export default function NewCoursePage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div
-              className="relative inline-flex"
-              onClick={() => setFormData({ ...formData, isPublished: !formData.isPublished })}
-            >
-              <input
-                type="checkbox"
-                name="isPublished"
-                id="isPublished"
-                checked={formData.isPublished}
-                onChange={handleChange}
-                className="sr-only"
-              />
-              <div
-                className="w-10 h-5 rounded-full transition-all cursor-pointer flex items-center px-0.5"
-                style={{
-                  background: formData.isPublished
-                    ? "linear-gradient(135deg, #7c3aed, #06b6d4)"
-                    : "rgba(255,255,255,0.1)",
-                }}
-              >
-                <div
-                  className="w-4 h-4 rounded-full transition-all"
-                  style={{
-                    background: "white",
-                    transform: formData.isPublished ? "translateX(20px)" : "translateX(0)",
-                  }}
-                />
-              </div>
-            </div>
-            <label htmlFor="isPublished" className="text-sm font-medium cursor-pointer" style={{ color: "#cbd5e1" }}>
-              Publikasikan kursus segera
-            </label>
+          <div className="px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.2)", color: "#a855f7" }}>
+            Kursus baru akan dibuat sebagai <strong>Draft</strong>. Anda dapat mengubah visibilitas setelah membuat kursus.
           </div>
 
           <div className="flex gap-4 pt-2">

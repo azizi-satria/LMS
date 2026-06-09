@@ -10,8 +10,13 @@ export default async function CoursesPage() {
     redirect("/login");
   }
 
+  const visibilityFilter =
+    session.user.role === "UMUM"
+      ? { visibility: "PUBLIC" as const, isApproved: true }
+      : { visibility: { in: ["INTERNAL", "PUBLIC"] as const }, isApproved: true };
+
   const courses = await prisma.course.findMany({
-    where: { isPublished: true },
+    where: visibilityFilter,
     include: {
       instructor: { select: { name: true } },
       _count: { select: { enrollments: true, modules: true } },

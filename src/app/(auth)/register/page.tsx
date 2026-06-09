@@ -55,6 +55,7 @@ export default function RegisterPage() {
               <select name="role" value={formData.role} onChange={handleChange} className="dark-input w-full px-4 py-3 rounded-xl text-sm" style={{ color: "#f1f5f9" }}>
                 <option value="MAHASISWA" style={{ background: "#111118" }}>Mahasiswa</option>
                 <option value="DOSEN" style={{ background: "#111118" }}>Dosen</option>
+                <option value="UMUM" style={{ background: "#111118" }}>Umum (Publik)</option>
               </select>
             </div>
             {formData.role === "MAHASISWA" && <div><label className="block text-sm font-medium mb-2" style={{ color: "#cbd5e1" }}>NIM</label><input name="nim" type="text" value={formData.nim} onChange={handleChange} placeholder="Nomor Induk Mahasiswa" className="dark-input w-full px-4 py-3 rounded-xl text-sm" style={{ color: "#f1f5f9" }} /></div>}
