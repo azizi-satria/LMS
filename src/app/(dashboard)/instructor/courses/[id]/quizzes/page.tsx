@@ -20,8 +20,15 @@ interface Quiz {
   passingScore: number;
   timeLimit?: number;
   randomize: boolean;
+  moduleId?: string;
   _count?: { questions: number; attempts: number };
   questions?: Question[];
+}
+
+interface Module {
+  id: string;
+  title: string;
+  order: number;
 }
 
 const typeLabels = { PRE_TEST: "Pre-Test", POST_TEST: "Post-Test", MODULE_QUIZ: "Kuis Modul" };
@@ -32,9 +39,9 @@ const typeColors = {
 };
 
 const inputStyle = {
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.1)",
-  color: "#f1f5f9",
+  background: "var(--bg-secondary)",
+  border: "1px solid var(--border-color)",
+  color: "var(--text-primary)",
   borderRadius: "12px",
   padding: "10px 14px",
   fontSize: "14px",
@@ -47,6 +54,7 @@ export default function QuizzesPage() {
   const courseId = params.id as string;
 
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [showCreateQuiz, setShowCreateQuiz] = useState(false);
@@ -63,6 +71,7 @@ export default function QuizzesPage() {
     passingScore: 70,
     timeLimit: "",
     randomize: false,
+    moduleId: "",
   });
 
   const [questionForm, setQuestionForm] = useState({
@@ -80,8 +89,12 @@ export default function QuizzesPage() {
   const [saving, setSaving] = useState(false);
 
   const fetchQuizzes = useCallback(async () => {
-    const res = await fetch(`/api/quizzes?courseId=${courseId}`);
-    if (res.ok) setQuizzes(await res.json());
+    const [qRes, mRes] = await Promise.all([
+      fetch(`/api/quizzes?courseId=${courseId}`),
+      fetch(`/api/courses/${courseId}/modules`),
+    ]);
+    if (qRes.ok) setQuizzes(await qRes.json());
+    if (mRes.ok) setModules(await mRes.json());
     setLoading(false);
   }, [courseId]);
 
@@ -109,11 +122,12 @@ export default function QuizzesPage() {
         passingScore: quizForm.passingScore,
         timeLimit: quizForm.timeLimit ? parseInt(quizForm.timeLimit) : null,
         randomize: quizForm.randomize,
+        moduleId: quizForm.type === "MODULE_QUIZ" && quizForm.moduleId ? quizForm.moduleId : null,
       }),
     });
     if (res.ok) {
       setShowCreateQuiz(false);
-      setQuizForm({ type: "MODULE_QUIZ", title: "", description: "", passingScore: 70, timeLimit: "", randomize: false });
+      setQuizForm({ type: "MODULE_QUIZ", title: "", description: "", passingScore: 70, timeLimit: "", randomize: false, moduleId: "" });
       fetchQuizzes();
     }
     setSaving(false);
@@ -319,13 +333,25 @@ export default function QuizzesPage() {
             <h2 className="font-bold text-lg mb-4" style={{ color: "#f1f5f9" }}>Buat Quiz Baru</h2>
             <form onSubmit={handleCreateQuiz} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: "#94a3b8" }}>Tipe</label>
-                <select value={quizForm.type} onChange={(e) => setQuizForm({ ...quizForm, type: e.target.value as Quiz["type"] })} style={{ ...inputStyle, background: "#111118" }} className="dark-input">
-                  <option value="PRE_TEST" style={{ background: "#111118" }}>Pre-Test (sebelum materi)</option>
-                  <option value="POST_TEST" style={{ background: "#111118" }}>Post-Test (akhir kursus)</option>
-                  <option value="MODULE_QUIZ" style={{ background: "#111118" }}>Kuis Modul</option>
+                <label className="block text-xs font-medium mb-1" style={{ color: "#94a3b8" }}>Tipe Quiz</label>
+                <select value={quizForm.type} onChange={(e) => setQuizForm({ ...quizForm, type: e.target.value as Quiz["type"], moduleId: "" })} style={{ ...inputStyle }} className="dark-input">
+                  <option value="PRE_TEST">Pre-Test — ditampilkan sebelum kursus dimulai</option>
+                  <option value="MODULE_QUIZ">Kuis Modul — ditampilkan di akhir modul tertentu</option>
+                  <option value="POST_TEST">Post-Test — ditampilkan setelah semua materi selesai</option>
                 </select>
               </div>
+              {quizForm.type === "MODULE_QUIZ" && (
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: "#94a3b8" }}>Letak di Modul</label>
+                  <select value={quizForm.moduleId} onChange={(e) => setQuizForm({ ...quizForm, moduleId: e.target.value })} style={{ ...inputStyle }} className="dark-input">
+                    <option value="">-- Pilih modul tempat kuis ini --</option>
+                    {modules.map((m) => (
+                      <option key={m.id} value={m.id}>Modul {m.order}: {m.title}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs mt-1" style={{ color: "#64748b" }}>Kuis akan muncul setelah peserta menyelesaikan modul ini.</p>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: "#94a3b8" }}>Judul</label>
                 <input type="text" value={quizForm.title} onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })} required style={inputStyle} className="dark-input" placeholder="Contoh: Pre-Test Pemrograman Web" />

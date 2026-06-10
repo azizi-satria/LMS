@@ -221,10 +221,10 @@ export default function EditCoursePage() {
 
   const vis = visibilityInfo[course.visibility];
   const semesters = [
-    "Semester Ganjil 2024/2025",
-    "Semester Genap 2024/2025",
-    "Semester Ganjil 2025/2026",
-    "Semester Genap 2025/2026",
+    "Pemula (Beginner)",
+    "Menengah (Intermediate)",
+    "Mahir (Advanced)",
+    "Semua Level",
   ];
 
   return (
@@ -289,7 +289,7 @@ export default function EditCoursePage() {
               <textarea value={courseForm.description} onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })} required rows={4} style={{ ...inputStyle, resize: "none" }} className="dark-input" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: "#cbd5e1" }}>Semester</label>
+              <label className="block text-sm font-medium mb-2" style={{ color: "#cbd5e1" }}>Level Kursus</label>
               <select value={courseForm.semester} onChange={(e) => setCourseForm({ ...courseForm, semester: e.target.value })} required style={{ ...inputStyle, background: "#111118" }} className="dark-input">
                 {semesters.map((s) => <option key={s} value={s} style={{ background: "#111118" }}>{s}</option>)}
               </select>

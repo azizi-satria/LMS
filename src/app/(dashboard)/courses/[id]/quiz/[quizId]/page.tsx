@@ -61,7 +61,7 @@ export default function QuizPage() {
     fetch(`/api/quizzes/${quizId}`)
       .then((r) => r.json())
       .then((data) => {
-        setQuiz(data);
+        setQuiz(data.quiz || data);
         setLoading(false);
       });
   }, [quizId]);

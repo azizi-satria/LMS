@@ -62,10 +62,10 @@ export default function NewCoursePage() {
   }
 
   const semesters = [
-    "Semester Ganjil 2024/2025",
-    "Semester Genap 2024/2025",
-    "Semester Ganjil 2025/2026",
-    "Semester Genap 2025/2026",
+    "Pemula (Beginner)",
+    "Menengah (Intermediate)",
+    "Mahir (Advanced)",
+    "Semua Level",
   ];
 
   return (
@@ -138,7 +138,7 @@ export default function NewCoursePage() {
 
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: "#cbd5e1" }}>
-              Semester <span style={{ color: "#ef4444" }}>*</span>
+              Level Kursus <span style={{ color: "#ef4444" }}>*</span>
             </label>
             <select
               name="semester"
@@ -148,7 +148,7 @@ export default function NewCoursePage() {
               style={{ ...inputStyle, background: "#111118" }}
               className="dark-input"
             >
-              <option value="" style={{ background: "#111118" }}>Pilih Semester</option>
+              <option value="" style={{ background: "#111118" }}>Pilih Level</option>
               {semesters.map((s) => (
                 <option key={s} value={s} style={{ background: "#111118" }}>{s}</option>
               ))}

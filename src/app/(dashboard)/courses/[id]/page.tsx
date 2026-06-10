@@ -229,9 +229,10 @@ export default function CourseDetailPage() {
 
       {/* MOOC feature links — only for enrolled users */}
       {isEnrolled && (
-        <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="grid grid-cols-3 gap-3 mb-5">
           {[
             { href: `/courses/${course.id}/forum`, icon: "💬", label: "Forum Diskusi", desc: "Diskusi dengan peserta lain" },
+            { href: `/courses/${course.id}/assignments`, icon: "📋", label: "Tugas", desc: "Lihat & kumpulkan tugas" },
             { href: `/profile/certificates`, icon: "🏆", label: "Sertifikat Saya", desc: "Lihat & unduh sertifikat" },
           ].map((item) => (
             <Link key={item.href} href={item.href} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid #1e1e2e", borderRadius: 12, padding: "14px 16px", textDecoration: "none", display: "block" }}
