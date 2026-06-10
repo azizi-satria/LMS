@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -146,6 +147,23 @@ function getInitials(name: string) {
 export default function Sidebar({ user, mahasiswaHasNoCourses }: SidebarProps) {
   const pathname = usePathname();
   const navItems = navItemsByRole[user.role] || [];
+  const [adminCounts, setAdminCounts] = useState<{ pendingApprovals: number; pendingPayments: number } | null>(null);
+
+  useEffect(() => {
+    if (user.role === "ADMIN") {
+      fetch("/api/admin/notifications")
+        .then((r) => r.json())
+        .then((d) => { if (!d.error) setAdminCounts(d); });
+    }
+  }, [user.role]);
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const getBadge = (href: string) => {
+    if (!adminCounts) return null;
+    if (href === "/admin/approvals" && adminCounts.pendingApprovals > 0) return adminCounts.pendingApprovals;
+    if (href === "/admin/payments" && adminCounts.pendingPayments > 0) return adminCounts.pendingPayments;
+    return null;
+  };
 
   return (
     <div
@@ -207,12 +225,17 @@ export default function Sidebar({ user, mahasiswaHasNoCourses }: SidebarProps) {
               }
             >
               <span style={{ color: isActive ? "#a855f7" : "var(--text-muted)" }}>{item.icon}</span>
-              <span>{item.label}</span>
+              <span className="flex-1">{item.label}</span>
               {showBadge && (
                 <span
-                  className="ml-auto w-2 h-2 rounded-full"
+                  className="w-2 h-2 rounded-full"
                   style={{ background: "#f59e0b", boxShadow: "0 0 6px rgba(245,158,11,0.6)" }}
                 />
+              )}
+              {getBadge(item.href) && (
+                <span style={{ background: "#ef4444", color: "#fff", borderRadius: 20, fontSize: 11, fontWeight: 700, padding: "2px 7px", minWidth: 20, textAlign: "center" }}>
+                  {getBadge(item.href)}
+                </span>
               )}
             </Link>
           );

@@ -3,6 +3,14 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 
+function Toast({ msg, ok }: { msg: string; ok: boolean }) {
+  return (
+    <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 100, padding: "12px 20px", borderRadius: 12, background: ok ? "#10b981" : "#ef4444", color: "#fff", fontWeight: 600, fontSize: 14, boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
+      {ok ? "✓ " : "✗ "}{msg}
+    </div>
+  );
+}
+
 interface Module { id: string; title: string; }
 interface Submission { userId: string; content: string; fileUrl?: string; score?: number; feedback?: string; status: string; submittedAt: string; user: { name: string }; }
 interface Assignment { id: string; title: string; description: string; deadline?: string; maxScore: number; module: { title: string }; submissions?: Submission[]; }
@@ -20,6 +28,8 @@ export default function AssignmentsPage() {
   const [form, setForm] = useState({ moduleId: "", title: "", description: "", deadline: "", maxScore: "100" });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [submissionsMap, setSubmissionsMap] = useState<Record<string, Submission[]>>({});
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const showToast = (msg: string, ok: boolean) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
   useEffect(() => {
     Promise.all([
@@ -45,14 +55,20 @@ export default function AssignmentsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch("/api/assignments", {
+    const res = await fetch("/api/assignments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, maxScore: parseInt(form.maxScore), deadline: form.deadline || null }),
     });
-    setShowCreate(false);
-    setForm({ moduleId: "", title: "", description: "", deadline: "", maxScore: "100" });
-    loadAssignments();
+    if (res.ok) {
+      setShowCreate(false);
+      setForm({ moduleId: "", title: "", description: "", deadline: "", maxScore: "100" });
+      loadAssignments();
+      showToast("Tugas berhasil dibuat!", true);
+    } else {
+      const err = await res.json();
+      showToast(err.error || "Gagal membuat tugas.", false);
+    }
   };
 
   const handleGrade = async (e: React.FormEvent) => {
@@ -76,6 +92,7 @@ export default function AssignmentsPage() {
 
   return (
     <div style={{ padding: "32px 24px", maxWidth: 900 }}>
+      {toast && <Toast msg={toast.msg} ok={toast.ok} />}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Tugas</h1>
