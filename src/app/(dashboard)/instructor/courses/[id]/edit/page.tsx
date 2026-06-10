@@ -246,6 +246,23 @@ export default function EditCoursePage() {
         </span>
       </div>
 
+      {/* Quick links to MOOC features */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {[
+          { href: `/instructor/courses/${course.id}/quizzes`, icon: "📝", label: "Kuis & Tes", desc: "Pre-test, post-test, kuis modul" },
+          { href: `/instructor/courses/${course.id}/live-sessions`, icon: "📹", label: "Sesi Live", desc: "Jadwal Zoom / pertemuan" },
+          { href: `/instructor/courses/${course.id}/assignments`, icon: "📋", label: "Tugas", desc: "Buat tugas & beri nilai" },
+        ].map((item) => (
+          <Link key={item.href} href={item.href} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid #1e1e2e", borderRadius: 12, padding: "14px 16px", textDecoration: "none", display: "block", transition: "border-color 0.2s" }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#7c3aed")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1e1e2e")}>
+            <div style={{ fontSize: 24, marginBottom: 6 }}>{item.icon}</div>
+            <div style={{ fontWeight: 600, fontSize: 14, color: "#f1f5f9", marginBottom: 2 }}>{item.label}</div>
+            <div style={{ fontSize: 12, color: "#64748b" }}>{item.desc}</div>
+          </Link>
+        ))}
+      </div>
+
       <div className="flex mb-6 rounded-xl p-1" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid #1e1e2e" }}>
         {(["info", "modules", "publish"] as const).map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)} className="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all"
