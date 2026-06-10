@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isPending = searchParams.get("pending") === "true";
@@ -33,6 +34,33 @@ export default function LoginPage() {
   }
 
   return (
+    <div className="rounded-2xl p-8" style={{ background: "rgba(255,255,255,0.04)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.08)" }}>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {isPending && <div className="px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", color: "#fbbf24" }}>⏳ Pendaftaran berhasil! Akun Dosen Anda sedang menunggu persetujuan admin. Anda akan bisa login setelah disetujui.</div>}
+        {isRegistered && !isPending && <div className="px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399" }}>✓ Pendaftaran berhasil! Silakan login.</div>}
+        {error && <div className="px-4 py-3 rounded-xl text-sm animate-scale-in" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5" }}>{error}</div>}
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: "#cbd5e1" }}>Alamat Email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="nama@universitas.ac.id" className="dark-input w-full px-4 py-3 rounded-xl text-sm" style={{ color: "#f1f5f9" }} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2" style={{ color: "#cbd5e1" }}>Kata Sandi</label>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Masukkan kata sandi" className="dark-input w-full px-4 py-3 rounded-xl text-sm" style={{ color: "#f1f5f9" }} />
+        </div>
+        <button type="submit" disabled={loading} className="gradient-btn w-full py-3 px-4 rounded-xl font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
+          {loading ? (<><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Memproses...</>) : "Masuk"}
+        </button>
+      </form>
+      <div className="mt-6 text-center space-y-3">
+        <p className="text-sm" style={{ color: "#64748b" }}>Belum punya akun? <Link href="/register" className="font-semibold" style={{ color: "#a855f7" }}>Daftar sekarang</Link></p>
+        <Link href="/" className="text-sm block" style={{ color: "#475569" }}>← Kembali ke Beranda</Link>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: "#0a0a0f" }}>
       <div className="animate-float" style={{ position: "absolute", width: "500px", height: "500px", top: "-150px", left: "-100px", background: "rgba(124, 58, 237, 0.15)", borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none" }} />
       <div className="animate-float-delayed" style={{ position: "absolute", width: "400px", height: "400px", bottom: "-100px", right: "-80px", background: "rgba(6, 182, 212, 0.1)", borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none" }} />
@@ -50,28 +78,9 @@ export default function LoginPage() {
             </div>
           </Link>
         </div>
-        <div className="rounded-2xl p-8" style={{ background: "rgba(255,255,255,0.04)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {isPending && <div className="px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", color: "#fbbf24" }}>⏳ Pendaftaran berhasil! Akun Dosen Anda sedang menunggu persetujuan admin. Anda akan bisa login setelah disetujui.</div>}
-            {isRegistered && !isPending && <div className="px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399" }}>✓ Pendaftaran berhasil! Silakan login.</div>}
-            {error && <div className="px-4 py-3 rounded-xl text-sm animate-scale-in" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5" }}>{error}</div>}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: "#cbd5e1" }}>Alamat Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="nama@universitas.ac.id" className="dark-input w-full px-4 py-3 rounded-xl text-sm" style={{ color: "#f1f5f9" }} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: "#cbd5e1" }}>Kata Sandi</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Masukkan kata sandi" className="dark-input w-full px-4 py-3 rounded-xl text-sm" style={{ color: "#f1f5f9" }} />
-            </div>
-            <button type="submit" disabled={loading} className="gradient-btn w-full py-3 px-4 rounded-xl font-semibold disabled:opacity-50 flex items-center justify-center gap-2">
-              {loading ? (<><svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Memproses...</>) : "Masuk"}
-            </button>
-          </form>
-          <div className="mt-6 text-center space-y-3">
-            <p className="text-sm" style={{ color: "#64748b" }}>Belum punya akun? <Link href="/register" className="font-semibold" style={{ color: "#a855f7" }}>Daftar sekarang</Link></p>
-            <Link href="/" className="text-sm block" style={{ color: "#475569" }}>← Kembali ke Beranda</Link>
-          </div>
-        </div>
+        <Suspense fallback={<div className="rounded-2xl p-8" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }} />}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );
