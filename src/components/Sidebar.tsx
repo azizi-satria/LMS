@@ -99,8 +99,9 @@ const navItemsByRole: Record<Role, NavItem[]> = {
   ADMIN: [
     { href: "/dashboard", label: "Dashboard", icon: <HomeIcon /> },
     { href: "/admin/users", label: "Manajemen Pengguna", icon: <UsersIcon /> },
+    { href: "/admin/dosen", label: "Verifikasi Dosen", icon: <AwardIcon /> },
     { href: "/admin/courses", label: "Semua Kursus", icon: <BookIcon /> },
-    { href: "/admin/approvals", label: "Persetujuan", icon: <CheckIcon /> },
+    { href: "/admin/approvals", label: "Persetujuan Kursus", icon: <CheckIcon /> },
     { href: "/admin/payments", label: "Pembayaran", icon: <CreditCardIcon /> },
     { href: "/admin/settings", label: "Pengaturan", icon: <CogIcon /> },
     { href: "/profile", label: "Profil Saya", icon: <UserIcon /> },
@@ -147,7 +148,7 @@ function getInitials(name: string) {
 export default function Sidebar({ user, mahasiswaHasNoCourses }: SidebarProps) {
   const pathname = usePathname();
   const navItems = navItemsByRole[user.role] || [];
-  const [adminCounts, setAdminCounts] = useState<{ pendingApprovals: number; pendingPayments: number } | null>(null);
+  const [adminCounts, setAdminCounts] = useState<{ pendingApprovals: number; pendingPayments: number; pendingDosen: number } | null>(null);
 
   useEffect(() => {
     if (user.role === "ADMIN") {
@@ -160,6 +161,7 @@ export default function Sidebar({ user, mahasiswaHasNoCourses }: SidebarProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getBadge = (href: string) => {
     if (!adminCounts) return null;
+    if (href === "/admin/dosen" && adminCounts.pendingDosen > 0) return adminCounts.pendingDosen;
     if (href === "/admin/approvals" && adminCounts.pendingApprovals > 0) return adminCounts.pendingApprovals;
     if (href === "/admin/payments" && adminCounts.pendingPayments > 0) return adminCounts.pendingPayments;
     return null;

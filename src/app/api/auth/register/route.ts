@@ -39,8 +39,16 @@ export async function POST(req: NextRequest) {
         role,
         nim: role === "MAHASISWA" ? nim : null,
         nip: role === "DOSEN" ? nip : null,
+        isVerified: role !== "DOSEN", // DOSEN requires admin approval
       },
     });
+
+    if (role === "DOSEN") {
+      return NextResponse.json(
+        { message: "Pendaftaran berhasil. Akun Anda menunggu persetujuan admin sebelum bisa login." },
+        { status: 201 }
+      );
+    }
 
     return NextResponse.json(
       { id: user.id, name: user.name, email: user.email, role: user.role },

@@ -9,12 +9,13 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [pendingApprovals, pendingPayments] = await Promise.all([
+    const [pendingApprovals, pendingPayments, pendingDosen] = await Promise.all([
       prisma.courseApproval.count({ where: { status: "PENDING" } }),
       prisma.payment.count({ where: { status: "PENDING" } }),
+      prisma.user.count({ where: { role: "DOSEN", isVerified: false } }),
     ]);
 
-    return NextResponse.json({ pendingApprovals, pendingPayments });
+    return NextResponse.json({ pendingApprovals, pendingPayments, pendingDosen });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

@@ -52,14 +52,15 @@ enum SubmissionStatus {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(MAHASISWA)
-  nim       String?
-  nip       String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String
+  email      String   @unique
+  password   String
+  role       Role     @default(MAHASISWA)
+  nim        String?
+  nip        String?
+  isVerified Boolean  @default(true)
+  createdAt  DateTime @default(now())
 
   courses             Course[]           @relation("InstructorCourses")
   enrollments         Enrollment[]

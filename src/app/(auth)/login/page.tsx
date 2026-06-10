@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isPending = searchParams.get("pending") === "true";
+  const isRegistered = searchParams.get("registered") === "true";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,7 +21,10 @@ export default function LoginPage() {
     setError("");
     const result = await signIn("credentials", { email, password, redirect: false });
     if (result?.error) {
-      setError("Email atau password salah. Silakan coba lagi.");
+      const msg = result.error.includes("PENDING_APPROVAL")
+        ? "Akun Anda sedang menunggu persetujuan admin. Silakan tunggu konfirmasi."
+        : "Email atau password salah. Silakan coba lagi.";
+      setError(msg);
       setLoading(false);
     } else {
       router.push("/dashboard");
@@ -46,6 +52,8 @@ export default function LoginPage() {
         </div>
         <div className="rounded-2xl p-8" style={{ background: "rgba(255,255,255,0.04)", backdropFilter: "blur(20px)", border: "1px solid rgba(255,255,255,0.08)" }}>
           <form onSubmit={handleSubmit} className="space-y-5">
+            {isPending && <div className="px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", color: "#fbbf24" }}>⏳ Pendaftaran berhasil! Akun Dosen Anda sedang menunggu persetujuan admin. Anda akan bisa login setelah disetujui.</div>}
+            {isRegistered && !isPending && <div className="px-4 py-3 rounded-xl text-sm" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399" }}>✓ Pendaftaran berhasil! Silakan login.</div>}
             {error && <div className="px-4 py-3 rounded-xl text-sm animate-scale-in" style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5" }}>{error}</div>}
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: "#cbd5e1" }}>Alamat Email</label>

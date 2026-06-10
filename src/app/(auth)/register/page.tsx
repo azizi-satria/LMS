@@ -23,7 +23,11 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: formData.name, email: formData.email, password: formData.password, role: formData.role, nim: formData.role === "MAHASISWA" ? formData.nim : undefined, nip: formData.role === "DOSEN" ? formData.nip : undefined }) });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Terjadi kesalahan."); setLoading(false); return; }
-      router.push("/login?registered=true");
+      if (formData.role === "DOSEN") {
+        router.push("/login?pending=true");
+      } else {
+        router.push("/login?registered=true");
+      }
     } catch { setError("Terjadi kesalahan jaringan."); setLoading(false); }
   }
 
