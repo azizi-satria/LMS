@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NetAdmin Academy 3D</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    canvas{display:block;position:fixed;inset:0;z-index:0}
+    #fade-overlay{position:fixed;inset:0;background:#000;pointer-events:none;opacity:0;transition:opacity .55s;z-index:50}
+    #click-to-start{position:fixed;inset:0;background:rgba(5,5,14,.85);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:60;gap:1rem;display:none}
+    #click-to-start .cts-ico{font-size:4rem}
+    #click-to-start h2{font-size:1.4rem;font-weight:800}
+    #click-to-start p{color:#666;font-size:.82rem;text-align:center;line-height:1.8}
+    #click-to-start .cts-keys{display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap;justify-content:center}
+    .key-badge{background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.5);color:#a855f7;padding:3px 10px;border-radius:6px;font-size:.78rem;font-weight:700}
+    #crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:18px;height:18px;pointer-events:none;z-index:20}
+    #crosshair::before,#crosshair::after{content:'';position:absolute;background:rgba(255,255,255,.75);border-radius:2px}
+    #crosshair::before{width:2px;height:100%;left:50%;transform:translateX(-50%)}
+    #crosshair::after{height:2px;width:100%;top:50%;transform:translateY(-50%)}
+    #interact-prompt{position:fixed;bottom:36%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid rgba(124,58,237,.6);color:#a855f7;padding:5px 18px;border-radius:20px;font-size:.82rem;font-weight:700;display:none;z-index:20}
+    #hud,#dialog-box,#inspect-box,#term-overlay,#obj-panel,#loc-label,#notif,#lvl-complete,#loading-screen,#main-menu,#howto-screen,#credits-screen{z-index:80;position:fixed}
+    .btn-continue{background:linear-gradient(135deg,#059669,#0891b2);border:none;color:#fff;padding:.8rem 2rem;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;width:100%;margin-bottom:.25rem;box-shadow:0 4px 20px rgba(5,150,105,.4)}
+    .btn-continue:hover{opacity:.9}
+  </style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="fade-overlay"></div>
+<div id="click-to-start">
+  <div class="cts-ico">🖥️</div>
+  <h2>Klik untuk Bermain</h2>
+  <p>Pointer akan dikunci untuk kontrol kamera</p>
+  <div class="cts-keys">
+    <span class="key-badge">W A S D — Jalan</span>
+    <span class="key-badge">Mouse — Kamera</span>
+    <span class="key-badge">E — Interaksi</span>
+    <span class="key-badge">ESC — Lepas</span>
+  </div>
+</div>
+
+<div id="crosshair" class="hidden"></div>
+<div id="interact-prompt"></div>
+
+<div id="loading-screen">
+  <div class="ld-wrap">
+    <div class="ld-logo">⚡</div>
+    <h1 class="ld-title">NetAdmin Academy</h1>
+    <p class="ld-sub">Game Edukasi Server &amp; Jaringan · SMK TKJ</p>
+    <div class="ld-bar"><div class="ld-fill" id="ld-fill"></div></div>
+    <p class="ld-msg" id="ld-msg">Menyalakan server...</p>
+  </div>
+</div>
+
+<div id="main-menu" class="hidden">
+  <div class="mm-bg">
+    <div class="mm-stars" id="mm-stars"></div>
+    <div class="mm-glow-1"></div>
+    <div class="mm-glow-2"></div>
+  </div>
+  <div class="mm-card">
+    <div class="mm-icon">🖥️</div>
+    <h1 class="mm-title">NetAdmin<span>Academy</span></h1>
+    <p class="mm-desc">Jelajahi Netville · Masuki server room · Selesaikan misi jaringan</p>
+    <div class="mm-btns">
+      <button class="btn-continue hidden" id="continue-btn" onclick="continueSave()" style="display:none">⏯ Lanjutkan Game</button>
+      <button class="btn-main" onclick="showNameInput()">▶ Mulai Baru</button>
+      <button class="btn-sub"  onclick="showHowTo()">📖 Cara Bermain</button>
+      <button class="btn-sub"  onclick="showCredits()">ℹ️ Tentang</button>
+    </div>
+    <p class="mm-ver">SMK TKJ · Netville City · v4.0 (3D)</p>
+  </div>
+</div>
+
+<div id="howto-screen" class="hidden overlay-screen">
+  <div class="info-card">
+    <h2>📖 Cara Bermain</h2>
+    <div class="howto-list">
+      <div class="howto-item"><span class="hi-num">1</span><div><strong>Gerak</strong><br/>WASD atau Arrow Keys untuk berjalan</div></div>
+      <div class="howto-item"><span class="hi-num">2</span><div><strong>Kamera</strong><br/>Klik game lalu gerakkan mouse untuk melihat sekeliling</div></div>
+      <div class="howto-item"><span class="hi-num">3</span><div><strong>Interaksi</strong><br/>Dekati karakter/objek lalu tekan E</div></div>
+      <div class="howto-item"><span class="hi-num">4</span><div><strong>Terminal</strong><br/>Ketik command Linux nyata untuk selesaikan misi</div></div>
+      <div class="howto-item"><span class="hi-num">5</span><div><strong>Lepas Kursor</strong><br/>Tekan ESC untuk lepas kontrol kamera</div></div>
+    </div>
+    <button class="btn-main" onclick="hideHowTo()">Mengerti! ✓</button>
+  </div>
+</div>
+
+<div id="credits-screen" class="hidden overlay-screen">
+  <div class="info-card">
+    <h2>⚡ NetAdmin Academy 3D</h2>
+    <p>Game Edukasi 3D Adventure untuk SMK TKJ</p>
+    <hr/>
+    <p>🎮 Engine: Three.js (WebGL)</p>
+    <p>📚 Materi: Administrasi Server Linux</p>
+    <p>🏙️ Setting: Kota Netville</p>
+    <button class="btn-sub" onclick="hideCredits()" style="margin-top:1rem">← Kembali</button>
+  </div>
+</div>
+
+<div id="game-screen" class="hidden">
+  <div id="hud">
+    <div class="hud-l">
+      <button class="hud-back" onclick="goMenu()">☰</button>
+      <div>
+        <div id="hud-lv">Level 1</div>
+        <div id="hud-ms">—</div>
+      </div>
+    </div>
+    <div class="hud-r">
+      <div class="hud-chip">⏱ <span id="hud-time">00:00</span></div>
+      <div class="hud-chip">⭐ <span id="hud-score">0</span></div>
+      <button class="hud-hint" onclick="useHint()">💡 <span id="hint-left">3</span></button>
+    </div>
+  </div>
+
+  <div id="dialog-box" class="hidden">
+    <div class="dlg-left">
+      <div class="dlg-ava" id="dlg-ava"></div>
+      <div class="dlg-who" id="dlg-who"></div>
+    </div>
+    <div class="dlg-right">
+      <p id="dlg-txt"></p>
+      <button class="dlg-btn" onclick="advanceDialog()">Lanjut ▶</button>
+    </div>
+  </div>
+
+  <div id="inspect-box" class="hidden">
+    <div class="ins-card">
+      <div class="ins-head">
+        <span class="ins-ico" id="ins-ico"></span>
+        <div>
+          <div class="ins-title" id="ins-title"></div>
+          <span class="ins-badge" id="ins-badge"></span>
+        </div>
+        <button class="ins-x" onclick="closeInspect()">✕</button>
+      </div>
+      <p class="ins-body" id="ins-body"></p>
+      <div class="ins-theory hidden" id="ins-theory">
+        <div class="th-label">📚 Materi Singkat</div>
+        <p id="th-txt"></p>
+      </div>
+      <button class="ins-action hidden" id="ins-action">💻 Buka Terminal</button>
+    </div>
+  </div>
+
+  <div id="term-overlay" class="hidden">
+    <div id="terminal">
+      <div class="trm-head">
+        <span class="trm-dots"><i></i><i></i><i></i></span>
+        <span class="trm-title">root@netville-server: ~</span>
+        <button onclick="closeTerm()">✕</button>
+      </div>
+      <div id="trm-out"></div>
+      <div class="trm-row">
+        <span class="trm-ps">root@netville:~# </span>
+        <input id="trm-in" type="text" autocomplete="off" spellcheck="false"/>
+      </div>
+    </div>
+  </div>
+
+  <div id="obj-panel">
+    <div class="obj-ttl" onclick="toggleObj()">📋 Misi <span id="obj-tog">▾</span><button onclick="event.stopPropagation();openMissionRef()" title="Info Misi" style="margin-left:auto;background:rgba(124,58,237,.25);border:1px solid rgba(124,58,237,.5);color:#c4b5fd;border-radius:8px;padding:1px 8px;font-size:.8rem;cursor:pointer;line-height:1.6">ℹ️</button></div>
+    <div id="obj-inner">
+      <ul id="obj-ul"></ul>
+      <button class="obj-term-btn" onclick="openTerm()">💻 Terminal</button>
+    </div>
+  </div>
+
+  <div id="loc-label" class="hidden"></div>
+  <div id="notif" class="hidden"></div>
+</div>
+
+<!-- Mission Intro Popup -->
+<div id="mission-popup" class="hidden" style="position:fixed;inset:0;z-index:88;display:flex;align-items:center;justify-content:center;background:rgba(5,5,14,.8);backdrop-filter:blur(6px)">
+  <div style="background:linear-gradient(135deg,#0d0d2a,#1a1040);border:2px solid rgba(239,68,68,.5);border-radius:20px;padding:2rem 2.5rem;max-width:420px;width:90%;text-align:center;box-shadow:0 0 60px rgba(239,68,68,.25),0 0 120px rgba(124,58,237,.15);animation:popIn .4s cubic-bezier(.34,1.56,.64,1)">
+    <div style="font-size:2.2rem;margin-bottom:.4rem">🚨</div>
+    <h2 id="mpop-title" style="color:#fca5a5;margin:0 0 1rem;font-size:1.25rem;font-weight:800"></h2>
+    <ul id="mpop-lines" style="text-align:left;color:#e0d0ff;font-size:.92rem;line-height:1.7;list-style:none;padding:0;margin:0 0 1.4rem"></ul>
+    <button onclick="closeMissionPopup()" style="background:linear-gradient(135deg,#dc2626,#7c3aed);border:none;color:#fff;padding:.7rem 2rem;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;width:100%">Siap! Mari Selesaikan! 💪</button>
+  </div>
+</div>
+
+<!-- Mission Reference Modal -->
+<div id="mission-ref" class="hidden" style="position:fixed;inset:0;z-index:89;display:flex;align-items:center;justify-content:center;background:rgba(5,5,14,.8);backdrop-filter:blur(6px)" onclick="if(event.target===this)closeMissionRef()">
+  <div style="background:linear-gradient(135deg,#0d0d2a,#0f1a30);border:1px solid rgba(124,58,237,.5);border-radius:20px;padding:2rem 2.5rem;max-width:460px;width:90%;text-align:left;box-shadow:0 0 60px rgba(124,58,237,.2);max-height:80vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1.2rem">
+      <span style="font-size:1.4rem">📋</span>
+      <h2 id="mref-title" style="color:#c4b5fd;margin:0;font-size:1.1rem;font-weight:800"></h2>
+      <button onclick="closeMissionRef()" style="margin-left:auto;background:none;border:none;color:#888;font-size:1.3rem;cursor:pointer">✕</button>
+    </div>
+    <div id="mref-objectives" style="margin-bottom:1.2rem"></div>
+    <div id="mref-hints" style="background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3);border-radius:10px;padding:1rem"></div>
+  </div>
+</div>
+
+<div id="pause-screen" class="hidden" style="position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;background:rgba(5,5,14,.88);backdrop-filter:blur(8px)">
+  <div style="background:linear-gradient(135deg,#0d0d2a,#1a1040);border:1px solid rgba(124,58,237,.5);border-radius:20px;padding:2.5rem 3rem;min-width:300px;text-align:center;box-shadow:0 0 60px rgba(124,58,237,.3)">
+    <div style="font-size:2.5rem;margin-bottom:.5rem">⏸</div>
+    <h2 style="color:#e0d0ff;margin:0 0 .3rem;font-size:1.5rem">Game Dijeda</h2>
+    <p style="color:#888;font-size:.8rem;margin:0 0 1.2rem">Tekan ESC lagi atau klik Lanjutkan</p>
+    <div style="display:flex;gap:1rem;justify-content:center;margin-bottom:1.4rem">
+      <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);color:#aaa;padding:3px 10px;border-radius:6px;font-size:.75rem;font-weight:700">ESC = Lanjut</span>
+      <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);color:#aaa;padding:3px 10px;border-radius:6px;font-size:.75rem;font-weight:700">S = Simpan</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.75rem">
+      <button onclick="resumeGame()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;padding:.75rem 1.5rem;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer">▶ Lanjutkan  <span style="opacity:.6;font-size:.75rem">[ESC]</span></button>
+      <button onclick="saveGame()" style="background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.5);color:#c4b5fd;padding:.65rem 1.5rem;border-radius:12px;font-size:.9rem;font-weight:600;cursor:pointer">💾 Simpan Progress  <span style="opacity:.6;font-size:.75rem">[S]</span></button>
+      <button onclick="exitToMenu()" style="background:rgba(255,50,50,.1);border:1px solid rgba(255,80,80,.35);color:#f87171;padding:.65rem 1.5rem;border-radius:12px;font-size:.9rem;font-weight:600;cursor:pointer">🚪 Keluar ke Menu Utama</button>
+    </div>
+    <p style="color:#555;font-size:.72rem;margin-top:1.2rem">Progress tidak tersimpan otomatis — simpan dulu sebelum keluar!</p>
+  </div>
+</div>
+
+<div id="lvl-complete" class="hidden">
+  <div class="lc-card" style="max-width:500px">
+    <div class="lc-burst" id="lc-burst">🏆</div>
+    <h2>Misi Berhasil!</h2>
+    <div class="lc-badge" id="lc-badge-txt"></div>
+    <div class="lc-row">
+      <div class="lc-stat"><span>⭐ Skor</span><b id="lc-sc">0</b></div>
+      <div class="lc-stat"><span>⏱ Waktu</span><b id="lc-tm">—</b></div>
+      <div class="lc-stat"><span>💡 Hint</span><b id="lc-ht">0x</b></div>
+    </div>
+    <div id="lc-summary" class="hidden" style="margin:1rem 0;text-align:left;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.3);border-radius:14px;padding:1.1rem 1.3rem;font-size:.87rem;line-height:1.65">
+      <div style="color:#c4b5fd;font-weight:800;font-size:1rem;margin-bottom:.75rem">📚 Apa yang Kamu Pelajari?</div>
+      <div class="lc-sum-row"><span class="lc-sum-lbl">✅ Apa yang dilakukan</span><span id="lcs-apa" class="lc-sum-val"></span></div>
+      <div class="lc-sum-row"><span class="lc-sum-lbl">🎯 Kenapa dilakukan</span><span id="lcs-kenapa" class="lc-sum-val"></span></div>
+      <div class="lc-sum-row"><span class="lc-sum-lbl">⚠️ Penyebab masalah</span><span id="lcs-penyebab" class="lc-sum-val"></span></div>
+      <div style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:.6rem .8rem;margin-top:.6rem">
+        <span style="color:#86efac;font-weight:700">💡 Pelajaran: </span><span id="lcs-pelajaran" style="color:#d1fae5"></span>
+      </div>
+    </div>
+    <button class="btn-main" onclick="nextLevel()">Level Berikutnya ▶</button>
+  </div>
+</div>
+
+<div id="name-screen" class="hidden overlay-screen" style="z-index:90">
+  <div class="name-card">
+    <div class="name-avatar" id="name-avatar">😊</div>
+    <h2>Perkenalkan Dirimu!</h2>
+    <p class="name-sub">Isi data diri kamu sebelum mulai PKL di Kota Netville.</p>
+    <div class="name-fields">
+      <div class="name-field-group">
+        <label class="name-label">👤 Nama Kamu</label>
+        <input id="player-name-input" type="text" maxlength="25" placeholder="Contoh: Budi Santoso" class="name-input-field" oninput="onNameType()" onkeydown="if(event.key==='Enter')document.getElementById('player-school-input').focus()"/>
+      </div>
+      <div class="name-field-group">
+        <label class="name-label">🏫 Nama SMK Kamu</label>
+        <input id="player-school-input" type="text" maxlength="40" placeholder="Contoh: SMKN 1 Curup" class="name-input-field" oninput="onNameType()" onkeydown="if(event.key==='Enter')confirmName()"/>
+      </div>
+    </div>
+    <div class="name-preview hidden" id="name-preview">
+      <div class="name-id-card">
+        <div class="nic-stripe"></div>
+        <div class="nic-body">
+          <div class="nic-top-row">
+            <div class="nic-logo">⚡</div>
+            <div>
+              <div class="nic-school-name" id="nic-school">SMK TKJ</div>
+              <div class="nic-label">KARTU SISWA PKL</div>
+            </div>
+          </div>
+          <div class="nic-divider"></div>
+          <div class="nic-name" id="nic-name">—</div>
+          <div class="nic-role">Siswa Praktik Kerja Lapangan</div>
+          <div class="nic-jurusan">Jurusan: Teknik Komputer &amp; Jaringan</div>
+          <div class="nic-year">T.A. 2024 / 2025</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-main" id="name-confirm-btn" onclick="confirmName()" disabled style="margin-top:1rem;opacity:.4">Lanjut — Pilih Lokasi Magang ▶</button>
+    <button class="btn-sub" onclick="hideNameInput()" style="margin-top:.4rem">← Kembali</button>
+  </div>
+</div>
+
+<style>
+.name-card{background:rgba(8,8,24,.97);border:1px solid rgba(124,58,237,.35);border-radius:20px;padding:2rem 1.8rem;max-width:500px;width:95%;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.55rem}
+.name-avatar{font-size:3.5rem;transition:transform .3s}
+.name-card h2{font-size:1.4rem;font-weight:800;color:#fff;margin:0}
+.name-sub{color:#888;font-size:.82rem;line-height:1.55;margin:0}
+.name-fields{width:100%;display:flex;flex-direction:column;gap:.6rem;margin:.2rem 0}
+.name-field-group{text-align:left}
+.name-label{display:block;font-size:.72rem;font-weight:700;color:#a855f7;margin-bottom:.3rem;letter-spacing:.04em}
+.name-input-field{width:100%;background:rgba(124,58,237,.1);border:2px solid rgba(124,58,237,.35);border-radius:10px;color:#fff;font-size:1rem;font-weight:600;padding:.6rem .9rem;outline:none;font-family:inherit;transition:border-color .2s,box-shadow .2s;box-sizing:border-box}
+.name-input-field:focus{border-color:#a855f7;box-shadow:0 0 14px rgba(168,85,247,.22)}
+.name-input-field::placeholder{color:rgba(255,255,255,.22);font-weight:400}
+.name-preview{margin-top:.4rem;animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.lc-sum-row{display:flex;flex-direction:column;gap:.15rem;margin-bottom:.55rem}
+.lc-sum-lbl{color:#a78bfa;font-weight:700;font-size:.78rem;letter-spacing:.03em}
+.lc-sum-val{color:#e2e8f0;font-size:.85rem}
+.name-id-card{background:linear-gradient(135deg,#150828,#071528);border:1.5px solid rgba(124,58,237,.55);border-radius:14px;overflow:hidden;width:280px;box-shadow:0 8px 30px rgba(124,58,237,.28)}
+.nic-stripe{height:7px;background:linear-gradient(90deg,#7c3aed,#06b6d4,#10b981,#06b6d4,#7c3aed)}
+.nic-body{padding:.9rem 1.1rem .8rem;text-align:left}
+.nic-top-row{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.5rem}
+.nic-logo{font-size:1.8rem;line-height:1}
+.nic-school-name{font-size:.72rem;font-weight:800;color:#a855f7;letter-spacing:.04em;text-transform:uppercase;line-height:1.3}
+.nic-label{font-size:.58rem;color:#555;letter-spacing:.06em;text-transform:uppercase}
+.nic-divider{height:1px;background:rgba(124,58,237,.2);margin:.4rem 0}
+.nic-name{font-size:1.1rem;font-weight:800;color:#fff;margin-bottom:.2rem;min-height:1.3rem;letter-spacing:.01em}
+.nic-role{font-size:.63rem;color:#06b6d4;font-weight:600}
+.nic-jurusan{font-size:.6rem;color:#888;margin-top:.1rem}
+.nic-year{font-size:.58rem;color:#444;margin-top:.4rem}
+#name-confirm-btn{transition:opacity .25s}
+</style>
+
+<div id="location-screen" class="hidden overlay-screen" style="z-index:90">
+  <div class="loc-card">
+    <div class="loc-header">
+      <div class="loc-emoji">🎓</div>
+      <h2>Pilih Tempat Magang</h2>
+      <p>Kamu adalah <strong>Andi</strong>, siswa SMK TKJ yang siap PKL.<br>Di mana kamu akan mengabdi dan membuktikan diri?</p>
+    </div>
+    <div class="loc-grid" id="loc-grid">
+      <div class="loc-option" onclick="selectLocation('gov')">
+        <div class="loc-ico">🏛️</div>
+        <div class="loc-name">Dinas Pemerintahan</div>
+        <div class="loc-sub">Kota Netville</div>
+        <div class="loc-desc">Kelola infrastruktur IT kota — dari e-government sampai CCTV kota. Bertemu langsung dengan Wali Kota!</div>
+        <div class="loc-tags"><span>Apache</span><span>Linux</span><span>Firewall</span></div>
+      </div>
+      <div class="loc-option" onclick="selectLocation('campus')">
+        <div class="loc-ico">🏫</div>
+        <div class="loc-name">Kampus Teknik</div>
+        <div class="loc-sub">Universitas Netville</div>
+        <div class="loc-desc">Handle server lab komputer, portal akademik, dan jaringan Wi-Fi kampus untuk ribuan mahasiswa.</div>
+        <div class="loc-tags"><span>DHCP</span><span>DNS</span><span>MySQL</span></div>
+      </div>
+      <div class="loc-option" onclick="selectLocation('corp')">
+        <div class="loc-ico">🏢</div>
+        <div class="loc-name">Perusahaan Swasta</div>
+        <div class="loc-sub">PT Netville Teknologi</div>
+        <div class="loc-desc">Sysadmin di startup IT berkembang pesat — server cloud, CI/CD pipeline, dan keamanan data klien.</div>
+        <div class="loc-tags"><span>SSH</span><span>Security</span><span>Monitoring</span></div>
+      </div>
+      <div class="loc-option" onclick="selectLocation('isp')">
+        <div class="loc-ico">📡</div>
+        <div class="loc-name">ISP / Provider</div>
+        <div class="loc-sub">Netville Fiber Indonesia</div>
+        <div class="loc-desc">Jaga kestabilan jaringan internet untuk seluruh kota — routing, bandwidth management, dan NOC 24 jam.</div>
+        <div class="loc-tags"><span>Networking</span><span>BGP</span><span>NOC</span></div>
+      </div>
+    </div>
+    <button class="btn-sub" onclick="hideLocationSelect()" style="margin-top:1rem">← Kembali</button>
+  </div>
+</div>
+
+<style>
+.loc-card{background:rgba(10,10,30,.97);border:1px solid rgba(124,58,237,.3);border-radius:20px;padding:2rem;max-width:860px;width:95%;max-height:90vh;overflow-y:auto}
+.loc-header{text-align:center;margin-bottom:1.5rem}
+.loc-header .loc-emoji{font-size:3rem;margin-bottom:.5rem}
+.loc-header h2{font-size:1.6rem;font-weight:800;color:#fff;margin-bottom:.4rem}
+.loc-header p{color:#aaa;font-size:.88rem;line-height:1.6}
+.loc-header strong{color:#a855f7}
+.loc-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:600px){.loc-grid{grid-template-columns:1fr}}
+.loc-option{background:rgba(124,58,237,.07);border:1.5px solid rgba(124,58,237,.25);border-radius:14px;padding:1.2rem;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.loc-option:hover{background:rgba(124,58,237,.18);border-color:rgba(124,58,237,.7);transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.25)}
+.loc-ico{font-size:2.4rem;margin-bottom:.5rem}
+.loc-name{font-size:1rem;font-weight:700;color:#fff;margin-bottom:.1rem}
+.loc-sub{font-size:.75rem;color:#7c3aed;font-weight:600;margin-bottom:.55rem}
+.loc-desc{font-size:.78rem;color:#9999bb;line-height:1.55;margin-bottom:.7rem}
+.loc-tags{display:flex;flex-wrap:wrap;gap:.3rem}
+.loc-tags span{background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.3);color:#06b6d4;font-size:.68rem;padding:2px 8px;border-radius:20px;font-weight:600}
+.loc-option.selected{border-color:#a855f7;background:rgba(168,85,247,.18);box-shadow:0 0 20px rgba(168,85,247,.35)}
+.loc-option:active{transform:scale(.98)}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/terminal.js"></script>
+<script src="js/world.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
